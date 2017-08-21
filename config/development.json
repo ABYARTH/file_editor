@@ -1,0 +1,15 @@
+{	      
+    "dbURL":"mongodb://ABYARTH1:Rumi123@ds153003.mlab.com:53003/text-editor",
+	"sessionSecret":"5F7RGH52S649WDFCB54",
+	"fb":{
+		"appID":"264681100547383",
+		"appSecret":"3e3970cfcefb0b77b952fa0f832754cf",
+		"callbackURL":"http://localhost:4000/auth/facebook/callback"
+	},
+    "twitter":{
+        "consumerKey": "oRBeqmT3o8LPIImhjscHieDnb",
+        "consumerSecret": "Rl8Zerjem0vE8F9zvVh8zykklqwVTn9AVXpgD1AbJJIGfNwC5C",
+        "callbackURL": "http://localhost:4000/auth/twitter/callback"  
+    },
+	"host":""
+}

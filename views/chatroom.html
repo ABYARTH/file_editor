@@ -1,0 +1,427 @@
+<!Doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+		<meta itemprop="name" content="simpl.info: simplest possible examples of HTML, CSS and JavaScript">
+		<meta itemprop="image" content="/icon_192x192.png">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta id="theme-color" name="theme-color" content="#fff">
+		<base target="_blank">
+
+		<title>elle</title>
+
+        <!--  FOR REACT JS      -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.2/react.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.2/JSXTransformer.js"></script>
+    
+		<!-- Latest compiled and minified CSS -->
+		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+        
+
+		<script>
+		$(function(){
+			var host = '{{config.host}}';
+			var socket = io.connect(host + '/roomlist');
+            
+			socket.on('connect', function(){
+				console.log('Connected');
+			})
+        
+            console.log('{{user.fullname}}');
+            //  show rooms in template
+			socket.on('roomupdate', function(data){
+                $("#ongoing").fadeIn();
+                $("#completed,#booklets").fadeOut();
+                var procData = JSON.parse(data);
+				$('#roomlist').html('');
+				for(var i=0; i<procData.length; i++){
+					var str = '<div class="col-md-4" ><div style="background:#E5E8E8; width:310px; min-height:150px;margin-left:20px;"><div class="panel-body"><div class="cr-newsroom"><div class="form-group"><p><a href="../room/' + procData[i].room_number + '"><h4>'+procData[i].room_name+'</h4></a></p></div><p>Created by: '+procData[i].room_by+'</p><a href="../room/' + procData[i].room_number + '" class="btn btn-primary btn-xs">Join</a></div></div></div></div>';
+					$('#roomlist').prepend(str);
+				}
+			})
+            
+            // create new room 
+			$(document).on('click', '#create', function(){
+				var room_name = $('.newRoom').val();
+				var room_by = '{{user.fullname}}';
+				if(room_name!=''){
+					var room_number = parseInt(Math.random()*10000);
+					socket.emit('newroom', {room_name:room_name, room_number:room_number, room_by:room_by});
+					$('.newRoom').val('');
+				}
+			})
+  
+            $(document).on('click', '.snippet-body', function(){
+//				console.log("We got here");
+                var roomname = $('.room_name_t').html();
+				var roomcontent = $('.room_cont_t').html();
+				var roomno = $('.room_no_t').html();
+                $('#modalHead').html('');
+                $('#modalBody').html('');
+                $('#modalHead').prepend(roomname);
+                $('#modalBody').prepend(roomcontent);    
+                $('#booklet-messages').html('');
+                
+                var msgrm = document.getElementById('messageroom').innerHTML;
+                var msgsrm = JSON.parse(msgrm);
+                var userNamez = '{{user.fullname}}';
+                for(var i=0; i<msgsrm.length; i++){
+                    if(msgsrm[i].room_no == roomno){
+                        var bookmsg = '<div class="panel-body"><div class="row"><img class="align-left" src="'+msgsrm[i].senderpic+'" style="height:30px; width:30px; border:5px;"/><div class="text-left">'+msgsrm[i].msg+'</div></div></div>';
+                        
+                        $('#booklet-messages').prepend(bookmsg);
+                    }else{
+                        console.log("Fooling around");
+                    }
+                }
+			})
+		})
+		</script>
+        
+        <script type="text/jsx">
+                
+                var socket = io();
+                
+                var Input = React.createClass({
+                  _notifyServer: function(event){
+                    socket.emit('client event', { value: event.target.value });
+                  },
+                  render: function(){
+                    return (
+                      <div className="update-label">
+                        <input type="text" placeholder="Enter text" onChange={this._notifyServer}/>
+                      </div>
+                    );
+                  }
+                });
+
+                var Label = React.createClass({
+                    getInitialState: function(){
+                        return { serverValue: '' };
+                    },  
+                    _onUpdateLabel: function(data) {
+                        this.setState({serverValue: data.value});
+                    },
+                    render: function(){
+                        return (
+                          <div class="my-label">
+                            <h2>{this.state.serverValue}</h2>
+                          </div>
+                        )
+                    }
+                });
+                
+                var input = React.render(<Input/>, document.getElementById('mount-point'));
+                var label = React.render(<Label/>, document.getElementById('label-mount-point'));
+                socket.on('update label', function (data) {
+                  label._onUpdateLabel(data);
+                });
+
+        </script>
+        
+        
+        
+        
+		<style>
+/* css for chat messages starts*/
+        .align-left {
+            float: left;
+            margin: 0 10px 0 0;
+        }
+        .align-right {
+            float: right;
+            margin: 0 0 0 10px;
+        }
+        .row {
+            width: 100%;
+            overflow: hidden;
+        }
+        .text-right {
+            background: #7FFFD4;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        .text-left {
+            background: #40E0D0;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        /*css for  chat msgs ends*/
+		video {
+		  	object-fit: cover;
+		  	background: #222;
+  			margin: 0 0 20px 0;
+  			width: 100%;
+		}
+
+		@media screen and (max-width: 650px) {
+		  h1 {
+		    font-size: 24px;
+		  }
+		}
+
+		@media screen and (max-width: 550px) {
+		  button:active {
+		    background-color: darkRed;
+		  }
+		  h1 {
+		    font-size: 22px;
+		  }
+		}
+
+		@media screen and (max-width: 450px) {
+		  h1 {
+		    font-size: 20px;
+		  }
+		}
+
+		@media screen and (min-width: 1000px) {
+		  video {
+		    height: 480px;
+		  }
+		}
+            #liveroomzz{
+                display: none;
+            }
+            #bookletroom{
+                display: none;
+            }
+            #messageroom{
+                display: none;
+            }
+
+        /* CSS talk bubble */
+        .talk-bubble {
+            margin: 40px;
+          display: inline-block;
+          position: relative;
+            width: 200px;
+            height: auto;
+            background-color: lightyellow;
+        }
+        .border{
+          border: 8px solid #666;
+        }
+        .round{
+          border-radius: 30px;
+            -webkit-border-radius: 30px;
+            -moz-border-radius: 30px;
+
+        }
+
+        /* Right triangle placed top left flush. */
+        .tri-right.border.left-top:before {
+            content: ' ';
+            position: absolute;
+            width: 0;
+            height: 0;
+          left: -40px;
+            right: auto;
+          top: -8px;
+            bottom: auto;
+            border: 32px solid;
+            border-color: #666 transparent transparent transparent;
+        }
+        .tri-right.left-top:after{
+            content: ' ';
+            position: absolute;
+            width: 0;
+            height: 0;
+          left: -20px;
+            right: auto;
+          top: 0px;
+            bottom: auto;
+            border: 22px solid;
+            border-color: lightyellow transparent transparent transparent;
+        }
+        .talktext{
+          padding: 1em;
+            text-align: left;
+          line-height: 1.5em;
+        }
+        .talktext p{
+          /* remove webkit p margins */
+          -webkit-margin-before: 0em;
+          -webkit-margin-after: 0em;
+        }  
+        .form-control{
+                border-radius: 0px;
+            }
+        .btn{
+                border-radius: 0px;
+        }
+        .style-4 input[type="text"] {
+          padding: 10px;
+          border: none;
+          border-bottom: solid 1px #c9c9c9;
+          transition: border 0.3s;
+        }    
+		</style>
+
+	</head>
+	<body>
+        <!-- Navigation -->
+	    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+	            <div class="navbar-header">
+	                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+	                    <span class="sr-only">Toggle navigation</span>
+	                    <span class="icon-bar"></span>
+	                    <span class="icon-bar"></span>
+	                    <span class="icon-bar"></span>
+	                </button>
+	                <a class="navbar-brand" href="#">elle</a>
+                </div>
+	            <!-- Collect the nav links, forms, and other content for toggling -->
+                <ul class="nav navbar-nav nav-tab navbar-right">
+                    <li><img src ='{{user.profilePic}}' style="float:right; width:30px; height: 30px; margin-top:10px; margin-right:20px;"></li>
+                    <li><h5 style="padding-top:10px; margin-right:20px;">Welcome {{ user.username }} </h5></li>
+                </ul>      
+            </div>
+	            <!-- /.navbar-collapse -->
+	        <!-- /.container -->
+	    </nav>
+<!--	Title container	-->
+        <div class="container" align="center" style='margin-top:100px;'>
+        
+        <div id="mount-point"></div>
+        <div id="label-mount-point"></div>
+
+	    	<h5>CREATE WORK AND SHOWCASE IT TO THE WORLD</h5>
+<!-- Create room container	-->    
+			<div style="background:#EAFAF1; width:300px; min-height:150px;">
+	    		<div class='panel-body style-4'>
+					<div class="cr-newsroom">
+						<div class="form-group">
+							<p> ENTER PROJECT NAME </p>			
+							<input type="text" class="newRoom form-control" autocomplete="off" placeholder="Enter Project Name"/>
+              			</div>
+						<button id="create" class="btn btn-primary btn-xs">START</button>
+		    		</div>
+				</div>
+	    	</div>
+	    </div>
+        <div class="container" align="center" style="margin-top:50px;">
+            <button id="live" class="glyphicon" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Messaging/online-25.png" title="Online" width="25" height="25"></button>
+            <button id="dead" class="glyphicon" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Sports/finish_flag-25.png" title="Finish Flag" width="25" height="25"></button>
+            <button id="book" class="glyphicon"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Science/literature-25.png" title="Literature" width="25" height="25"></button>
+        </div>            1
+<!-- Snippet Modal-->
+       <div class="modal fade" id="Snippets_id" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalHead"></h4>
+              </div>
+              <div class="modal-body" id="modalBody">
+              </div>
+              <div class="modal-body" id="booklet-messages">
+              </div>
+            </div>
+          </div>
+        </div>
+	    
+<!-- Show live rooms container	-->    
+		<hr>
+        <div id='ongoing' style='margin:50px; display:none;'>
+            <p align="center">ON GOING PROJECTS</p><br>
+            <div class="container" id="roomlist">
+            </div>
+        </div>    
+
+<!-- Show old/dead rooms container	-->    
+<!--
+		<div id='completed' style='display:none; margin:50px;'>
+            <p align="center">COMPLETED PROJECTS</p><br>
+            <div class="container" id="livroomlist">
+            </div>
+        </div>
+-->
+
+<!-- Show booklets container	-->    
+		<div id='booklets'>
+            <p align="center">BOOKLETS</p><br>
+            <div class="container" id="bookletlist">
+            </div>
+        </div>    
+
+<!-- Test data -->
+		<p id='liveroomzz' style='display:none;'>{{ liverooms }}</p>
+        <p id='bookletroom' style='display:none;'>{{ booklets }}</p>
+        <p id='messageroom' style='display:none;'>{{ messages }}</p>
+
+</body>   
+
+<script>
+    
+$(document).ready( function(){
+  // code for changing the content of page
+  $("#live").on('click', function() {
+     $("#ongoing").fadeIn();
+     $("#completed,#booklets").fadeOut();
+  });
+  $("#dead").on('click', function() {
+     $("#ongoing,#booklets").fadeOut();
+     $("#completed").fadeIn();
+  });
+  $("#book").on('click', function() {
+     $("#completed,#ongoing").fadeOut();
+     $("#booklets").fadeIn();
+  });
+});
+    
+$(function(){
+       // to display dead rooms
+        var rmn = document.getElementById('liveroomzz').innerHTML;
+        rmnzzz = '[' + rmn +']';
+//        console.log(rmnzzz);
+        var rrrr = JSON.parse(rmnzzz);
+        $('#livroomlist').html(''); 
+        for(var i=0; i<rrrr.length; i++){
+            var str = '<div class="col-md-4" ><div style="background:#E5E8E8; width:310px; min-height:150px;margin-left:20px;"><div class="panel-body"><div class="cr-newsroom"><div class="form-group"><p><a href="room/' + rrrr[i].room_number + '"><h4>'+rrrr[i].room_name+'</h4></a></p></div><p>Created by: '+rrrr[i].room_by+'</p><a href="room/' + rrrr[i].room_number + '" class="btn btn-primary btn-xs">Join</a></div></div></div></div>';
+            $('#livroomlist').prepend(str);
+        }
+    
+    
+        //  code to display Booklets starts here
+        var bkrm = document.getElementById('bookletroom').innerHTML;
+        var bookrm = JSON.parse(bkrm);
+        $('#bookletlist').html(''); 
+        
+        for(var i=0; i<bookrm.length; i++){
+               
+            var nameOfRoom = bookrm[i].room_name;
+            var nameOfCreator = bookrm[i].fullname;
+            var modalcont = bookrm[i].content;
+            var noOfRoom = bookrm[i].room_no;
+             
+            var bookstr = '<div class="col-md-4" style="margin-bottom:20px;"><div style="background:#E5E8E8; width:310px; min-height:400px; margin-left:20px;"><div class="panel-body snippet-body" data-toggle="modal" data-target="#Snippets_id"><div class="cr-newsroom"><div class="form-group" align=center><p class="room_name_t">'+nameOfRoom+'</p><p class="room_cont_t" style="display:none;">'+modalcont+'</p><p class="room_no_t" style="display:none;">'+noOfRoom+'</p></div><img src="https://s-media-cache-ak0.pinimg.com/736x/50/b2/8b/50b28b6c33285fc5485b0aca65891f1c.jpg" style="height:350px; width:280px;"></div><p style="float:right;"><h6>Rs 100</h6></p><p><h6>By: '+nameOfCreator+'</h6></p></div></div></div>';
+
+            $('#bookletlist').prepend(bookstr);
+            
+                                               
+        }
+    
+    
+            
+    
+    
+});
+</script>
+</html>

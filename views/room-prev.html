@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<title>NOTAPP 0.1</title>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+	<link rel="stylesheet" type="text/css" href="../css/room.css">
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+
+		<!-- for the screen sharing part-->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<script>
+		$(function(){            
+			var host = '{{config.host}}';
+			var messages = io.connect(host + '/messages');
+			var savesession = io.connect(host + '/savesession');
+			var content = io.connect(host + '/content')
+			var roomNum = '{{room_number}}';
+			var userName = '{{user.fullname}}';
+			var userPic = '{{user.profilePic}}';
+			var room_creator = '{{room_by}}';
+            var room_name = '{{room_name}}';
+          
+          
+            messages.on('connect', function(){
+				messages.emit('joinroom', {room:roomNum, user:userName, userPic:userPic})
+			})
+            
+			content.on('connect', function(){
+				content.emit('joinroom', {room:roomNum, user:userName, userPic:userPic})
+			})
+          
+            
+          // to check if the user in the room is the actual creator of this room of just a visitor 
+            if(userName == room_creator){    // ie. check if he is the creator
+                $("#creator-container").show();
+                $("#visitor-container").hide();
+            }
+            else{
+                $("#creator-container").hide();
+                $("#visitor-container").show();
+            }
+        
+
+			// dealing with chat messages starts here ..................................................
+			$(document).on('keyup', '.newmessage', function(e){
+				if(e.which === 13 && $(this).val()!=''){
+					messages.emit('newMessage',{
+						room_number:roomNum,
+                        room_name:room_name,
+                        room_creator:room_creator,
+						user:userName,
+						userPic:userPic,
+						message:$(this).val()
+					})
+					updateMessageFeed(userPic, $(this).val());
+					$(this).val('');
+				}
+			})
+
+			messages.on('messagefeed', function(data){
+                var msgs = JSON.parse(data);
+				updateMessageFeed(msgs.userPic, msgs.message, msgs.user, userName);
+			})
+
+			function updateMessageFeed(userPic, message, user, userNames){
+                if(user==userNames){
+                    var str = '<div class="panel-body"><div class="row"><img class="align-right" src="'+userPic+'" style="height:30px; width:30px; border:5px;"/><div class="text-right">'+message+'</div></div></div>';    
+                }else{
+                    var str = '<div class="panel-body"><div class="row"><img class="align-left" src="'+userPic+'" style="height:30px; width:30px; border:5px;"/><div class="text-left">'+message+'</div></div></div>';
+                }
+                
+				$(str).appendTo($('.messages'));
+                var div = document.getElementById('messagebox');
+                div.scrollTop = div.scrollHeight - div.clientHeight;
+                var div2 = document.getElementById('messagebox2');
+                div2.scrollTop = div2.scrollHeight - div2.clientHeight;
+                
+			}
+			//............ dealing for chat messages ends here...........................................
+			
+        
+        
+			// dealing with creator content for room starts here..................................................
+			$(document).on('keyup', '.newcontent', function(e){
+				if(e.which === 13 && $(this).val()!=''){
+					messages.emit('newcontent',{
+						room_number:roomNum,
+                        room_name:room_name,
+						user:userName,
+						userPic:userPic,
+						content:$(this).val()
+					})
+					updateContentFeed(userPic, $(this).val());
+					$(this).val('');
+				}
+			})
+
+			messages.on('contentfeed', function(data){
+				var cont = JSON.parse(data);
+				updateContentFeed(cont.userPic, cont.content);
+			})
+
+			function updateContentFeed(userPic, content){
+				var str = '<h5>'+content+'</h5>';
+                $(str).appendTo($('.content'));
+                
+                var dic = document.getElementById('contentbox');
+                dic.scrollTop = dic.scrollHeight - dic.clientHeight;
+                var dic2 = document.getElementById('contentbox2');
+                dic2.scrollTop = dic2.scrollHeight - dic2.clientHeight;
+			}
+			// for creator content for room ends here..................................................
+        
+        
+        // save content from redis to db
+			$(document).on('click', '#saveTheSession', function(e){
+                    var contentss = $('#content_content').html();
+                    var conto= contentss.replace("<h5>", "");
+				    var connto = conto.replace("</h5>", "");
+//                    console.log("contents : " +connto);              
+					savesession.emit('saveTheSession',{
+						room_number:roomNum,
+						user:userName,
+                        room_name: room_name,
+						userPic:userPic,
+                        room_creator: room_creator,
+                        content:connto
+					})
+			})
+
+            
+        
+        })  
+        
+	</script>
+	</head>
+	<style type="text/css">
+        
+        /* css for chat messages starts*/
+        .align-left {
+            float: left;
+            margin: 0 10px 0 0;
+        }
+        .align-right {
+            float: right;
+            margin: 0 0 0 10px;
+        }
+        .row {
+            width: 100%;
+            overflow: hidden;
+        }
+        .text-right {
+            background: #7FFFD4;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        .text-left {
+            background: #40E0D0;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        /*css for  chat msgs ends*/
+        
+		.make-center {
+            text-align: center;
+            padding: 5px 10px;
+        }
+
+        video {
+                -moz-transition: all 1s ease;
+                -ms-transition: all 1s ease;
+                
+                -o-transition: all 1s ease;
+                -webkit-transition: all 1s ease;
+                transition: all 1s ease;
+                vertical-align: top;
+                width: 100%;
+            }
+
+            .setup {
+                border-bottom-left-radius: 0;
+                border-top-left-radius: 0;
+                font-size: 102%;
+                height: 47px;
+                margin-left: -9px;
+                margin-top: 8px;
+                position: absolute;
+            }
+        #visitor-container{
+            display:none;
+        }
+        #biscuit{
+            display:none;
+        }
+        #contentbis{
+            display:none;
+        }
+        .form-control{
+            border-radius: 0;
+            height: 50px;
+        }
+	</style>
+    
+        <!-- scripts used for screen-sharing -->
+        <link rel="chrome-webstore-item" href="https://chrome.google.com/webstore/detail/ajhifddimkapgcifgcodmmfdlknahffk">
+        <script src='https://cdn.webrtc-experiment.com/firebase.js'> </script>
+        <script src="https://cdn.webrtc-experiment.com/getScreenId.js"> </script>
+        <script src="https://cdn.webrtc-experiment.com/BandwidthHandler.js"></script>
+        <script src="https://cdn.webrtc-experiment.com/screen.js"> </script>
+
+	<body>
+        
+<!-- NAV BAR STARTS HERE -->
+    <nav class="navbar navbar-default navbar-fixed-top">
+       <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">NOTAPP</a>
+        </div>
+        <ul class="nav navbar-nav navbar-right">
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav nav-tab navbar-right">
+                  <li><img src ='{{user.profilePic}}' style="float:right; width:30px; height: 30px; margin-top:10px; margin-right:20px;"></li>
+                  <li><h5 style="padding-top:10px; margin-right:20px;">Welcome {{ user.fullname }} !!!</h5></li>                  
+                  <li><a href="/chatroom">Gallery</a></li>
+<!--                  <li><a href="/logout">Logout</a></li>-->
+                </ul>      
+            </div>
+         </ul>
+        </div>
+     </nav>
+
+<!-- BODY CONTENT STARTS HERE -->
+
+<!--upper container for room mane and welcome for user-->
+		<div class="container" style="margin-top:5%;">
+			<div class="container">
+				<div class="rm-roomname" style="width:65%; float: left;">
+					<p align=center><h4>{{room_name}}</h4></p>
+<!--                <p><h6>{{room_by}}</h6></p>    -->
+				</div>
+<!--
+				<div class="rm-roomname" style="width:30%; float: right;">
+					<img src ='{{user.profilePic}}' style="float:right; width:30px; height: 30px; margin-top:15px;margin-right:50px;">
+					<p><h5 style="padding-top:15px;">Welcome {{ user.fullname }} !!!</h5></p>
+				</div>
+-->
+			</div>	
+		</div>		
+
+<!-- second container containing the main content box ||  if user is the creator of this room -->
+<!-- the user content upload section-->
+    <div id='creator-container' >
+        <div class="container" style="margin-top:5px;">
+			<div class="container" style="width:70%; float: left;">
+				<div class="rm-roomname">
+					<div id='contentbox' style="width:100%; min-height:150px; overflow:auto; background: #f7f8f9;">
+			    		
+							<div class="content" id="content_content" style="padding: 10px; height: 450px; ">			
+							</div>
+						
+					</div>	
+					<div class="rm-newcontent">
+						<input type="text" class="newcontent form-control" autocomplete="off" placeholder="Enter Content.....">
+					</div>
+                    <button id="fileshare" class="glyphicon" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Messaging/attach-25.png" title="Attach" width="20" height="20"></button>
+                    <button id="share-screen" class="glyphicon" onclick="DefaultScreenShareName()" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/User_Interface/screensharing-25.png" title="Screensharing" width="20" height="20"></button>
+                    <button id="saveTheSession" class="glyphicon"><img src="https://maxcdn.icons8.com/dotty/PNG/80/User_Interface/save-80.png" title="Save" width="20" height="20"></button>
+                    <br>
+				</div>
+			</div>	
+<!-- the user message recieve and reply section-->
+			<div class="container" style="width:30%; float: right;">
+				<div class="rm-userbox">
+				</div>
+				<div id='messagebox' style="width:100%; min-height:150px; overflow:auto; background: #f7f8f9;">
+							<div class="messages" style="height: 450px; padding:10px; ">
+							</div>
+				</div>	
+				<div class="rm-newmessage">
+					<input type="text" class="newmessage form-control" autocomplete="off" placeholder="Reply">
+				</div>
+					
+			</div>
+            
+		</div>
+        <!-- third container starts // it contains the switches -->
+<!--
+		<div class="container">
+			<div class="panel-body">
+				<button id="fileshare" class="glyphicon" style="margin-right:10px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Messaging/attach-25.png" title="Attach" width="20" height="20"></button>
+				<button id="share-screen" class="glyphicon" onclick="DefaultScreenShareName()" style="margin-right:10px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/User_Interface/screensharing-25.png" title="Screensharing" width="20" height="20"></button>
+				<button id="saveTheSession" class="glyphicon"><img src="https://maxcdn.icons8.com/dotty/PNG/80/User_Interface/save-80.png" title="Save" width="20" height="20"></button>
+			</div>
+		</div>
+-->
+        <!--third container ends-->
+        <!-- for screen sharing test id = 12klj starts here-->
+		<div class="container" style="margin-top:5px;">
+			<div class="panel-body">
+					    <h2 id="number-of-participants" style="display: block;text-align: center;border:0;margin-bottom:0;"></h2>
+                    <input type="text" id="user-name" class="form-control" placeholder="Your Name" style="display:none;">
+			</div>
+		</div>
+        <!-- for screen sharing test id = 12klj starts here-->
+    </div>
+<!--second container ends-->
+
+
+<!-- second container containing the main content box  || if user is the visitor of this room-->
+<!-- the user content upload section  -->
+		<div class="container" id='visitor-container' style="margin-top:5px;">
+			<div class="container" style="width:70%; float: left;">
+				<div class="rm-roomname">
+					<div id='contentbox2' style="width:100%; min-height:150px; overflow:auto; background: #f7f8f9;">
+			    			<div class="content" style="height: 450px; padding:10px;">
+							</div>
+					</div>	
+				<br>
+				</div>
+			</div>	
+<!-- the user message recieve and reply section-->
+			<div class="container" style="width:30%; float: right;">
+				<div class="rm-userbox">
+				</div>
+				<div id='messagebox2' style="width:100%; min-height:150px; overflow:auto; background:#f7f8f9; ">
+				    <div class="messages" style=" padding:10px; height: 450px; ">
+				    </div>
+				</div>	
+				<div class="rm-newmessage">
+					<input type="text" class="newmessage form-control" autocomplete="off" placeholder="Queries ">
+				</div>
+					
+			</div>
+		</div>
+<!--second container ends-->
+
+
+<!-- third container starts // it contains the switches -->
+<!--
+		<div class="container" style="margin-top:5px;">
+			<div class="panel-body">
+				<button id="fileshare" class="glyphicon glyphicon-paperclip" style="margin-right:10px;"></button>
+				<button id="share-screen" class="glyphicon glyphicon-blackboard" style="margin-right:10px;"></button>
+				<button id="videochat" class="glyphicon glyphicon-facetime-video" style="margin-right:10px;"></button>
+				<button id="saveTheSession" class="glyphicon glyphicon-save"></button>
+			</div>
+		</div>
+-->
+        <!-- list of all available broadcasting rooms -->
+        <div class="container" style="margin-top:5px;">
+			<div class="panel-body">
+				<table style="width: 87%;" id="rooms-list"></table>        
+			</div>
+		</div>  
+<!--third container ends-->
+
+<!-- fourth container for screen sharing starts -->
+		<!-- for screen sharing test id = 12klj starts here-->
+        <!--
+		<div class="container" style="margin-top:5px;">
+			<div class="panel-body">
+					    <h2 id="number-of-participants" style="display: block;text-align: center;border:0;margin-bottom:0;"></h2>
+					<span>
+                         Want to share privately?<a href="/screen-sharing/" target="_blank" title="Open this link for private screen sharing!"><code><strong id="unique-token">#123456789</strong></code></a>
+                    </span>
+                    <input type="text" id="user-name" class="form-control" placeholder="Your Name">
+                    <button id="share-screen" class="btn btn-primary btn-xs" onclick="DefaultScreenShareName()">Share Your Screen</button>
+			</div>
+		</div>
+        -->
+
+		<div class="container" style="margin-top:5px;">
+			<div class="panel-body">
+                <!-- local/remote videos container -->
+                <div id="videos-container"></div>
+			</div>
+		</div>
+<!-- fourth container ends-->
+
+<!--test section-->
+<div class="container" style="margin-top:5px;">
+			<div class="panel-body" id="biscuit">
+                {{room_content}}
+			</div>
+		</div>
+<div class="container" style="margin-top:5px;">
+			<div class="panel-body" id="contentbis">
+                {{room_content_con}}
+			</div>
+		</div>
+
+<!-- Page controll scripts here-->
+
+        <script> 
+            // to get message contents on page reload            
+            var bis = document.getElementById("biscuit").innerHTML;
+            var biss = '['+bis+']';
+            var jiss = JSON.parse(biss);
+            console.log(biss);
+            
+            for (i=0; i<jiss.length; i++){
+                
+                var userNamez = '{{user.fullname}}';
+                if(jiss[i].user==userNamez){
+                    var str = '<div class="panel-body"><div class="row"><img class="align-right" src="'+jiss[i].userPic+'" style="height:30px; width:30px; border:5px;"/><div class="text-right">'+jiss[i].message+'</div></div></div>';    
+                }else{
+                    var str = '<div class="panel-body"><div class="row"><img class="align-left" src="'+jiss[i].userPic+'" style="height:30px; width:30px; border:5px;"/><div class="text-left">'+jiss[i].message+'</div></div></div>';
+                }
+                
+                $('.messages').prepend(str);
+            }
+            
+            // to get contents on page reload            
+            var cbis = document.getElementById("contentbis").innerHTML;
+            var cbiss = '['+cbis+']';
+            var cjiss = JSON.parse(cbiss);
+            console.log(typeof cjiss);
+            
+            for (i=0; i<cjiss.length; i++){
+                var str = '<h5>'+cjiss[i].content+'</h5>';
+                $('.content').prepend(str);
+            }
+                
+                
+        </script>
+
+        <script>    
+        // set default value for screen share name
+        function DefaultScreenShareName() {
+            document.getElementById("user-name").defaultValue = {{ room_name }} ;
+        }
+        </script>
+
+
+<!-- SCRIPTS FOR SCREEN SHARING STARTS HERE -->
+            <script>
+                function intallFirefoxScreenCapturingExtension() {
+                    InstallTrigger.install({
+                        'Foo': {
+                            // URL: 'https://addons.mozilla.org/en-US/firefox/addon/enable-screen-capturing/',
+                            URL: 'https://addons.mozilla.org/firefox/downloads/file/355418/enable_screen_capturing_in_firefox-1.0.006-fx.xpi?src=cb-dl-hotness',
+                            toString: function() {
+                                return this.URL;
+                            }
+                        }
+                    });
+                }
+                
+                var videosContainer = document.getElementById("videos-container") || document.body;
+                var roomsList = document.getElementById('rooms-list');
+                
+                var screensharing = new Screen();
+                
+                screensharing.onscreen = function(_screen) {
+                    var alreadyExist = document.getElementById(_screen.userid);
+                    if (alreadyExist) return;
+
+                    if (typeof roomsList === 'undefined') roomsList = document.body;
+
+                    var tr = document.createElement('tr');
+                    
+                    tr.id = _screen.userid;
+                    tr.innerHTML = '<td>' + _screen.userid + ' shared his screen.</td>' +
+                            '<td><button class="join">Preview His Screen</button></td>';
+                    roomsList.insertBefore(tr, roomsList.firstChild);
+
+                    var button = tr.querySelector('.join');
+                    button.setAttribute('data-userid', _screen.userid);
+                    button.setAttribute('data-roomid', _screen.roomid);
+                    button.onclick = function() {
+                        var button = this;
+                        button.disabled = true;
+                        
+                        var _screen = {
+                            userid: button.getAttribute('data-userid'),
+                            roomid: button.getAttribute('data-roomid')
+                        };
+                        screensharing.view(_screen);
+                    };
+                };
+
+                // on getting each new screen
+                screensharing.onaddstream = function(media) {
+                    media.video.id = media.userid;
+                    
+                    var video = media.video;
+                    video.setAttribute('controls', true);
+                    videosContainer.insertBefore(video, videosContainer.firstChild);
+                    video.play();
+                    rotateVideo(video);
+                };
+
+                // using firebase for signaling
+                // screen.firebase = 'signaling';
+
+                // if someone leaves; just remove his screen
+                screensharing.onuserleft = function(userid) {
+                    var video = document.getElementById(userid);
+                    if (video && video.parentNode) video.parentNode.removeChild(video);
+                };
+
+                // check pre-shared screens
+                screensharing.check();
+
+                document.getElementById('share-screen').onclick = function() {
+                    screensharing.share();
+                    this.disabled = true;
+                };
+                
+                document.getElementById('share-screen').onclick = function() {
+                    var username = document.getElementById('user-name');
+                    username.disabled = this.disabled = true;
+                    
+                    screensharing.isModerator = true;
+                    screensharing.userid = username.value;
+                    
+                    screensharing.share();
+                };
+                
+                function rotateVideo(video) {
+                    video.style[navigator.mozGetUserMedia ? 'transform' : '-webkit-transform'] = 'rotate(0deg)';
+                    setTimeout(function() {
+                        video.style[navigator.mozGetUserMedia ? 'transform' : '-webkit-transform'] = 'rotate(360deg)';
+                    }, 1000);
+                }
+
+                (function() {
+                    var uniqueToken = document.getElementById('unique-token');
+                    if (uniqueToken)
+                        if (location.hash.length > 2) uniqueToken.parentNode.parentNode.parentNode.innerHTML = '<h2 style="text-align:center;"><a href="' + location.href + '" target="_blank">Share this link</a></h2>';
+                        else uniqueToken.innerHTML = uniqueToken.parentNode.parentNode.href = '#' + (Math.random() * new Date().getTime()).toString(36).toUpperCase().replace( /\./g , '-');
+                })();
+                
+                screensharing.onNumberOfParticipantsChnaged = function(numberOfParticipants) {
+                    if(!screensharing.isModerator) return;
+                    
+                    document.title = numberOfParticipants + ' users are viewing your screen!';
+                    var element = document.getElementById('number-of-participants');
+                    if (element) {
+                        element.innerHTML = numberOfParticipants + ' users are viewing your screen!';
+                    }
+                };
+            </script>
+
+            <script>
+                // todo: need to check exact chrome browser because opera also uses chromium framework
+                var isChrome = !!navigator.webkitGetUserMedia;
+                
+                // DetectRTC.js - https://github.com/muaz-khan/WebRTC-Experiment/tree/master/DetectRTC
+                // Below code is taken from RTCMultiConnection-v1.8.js (http://www.rtcmulticonnection.org/changes-log/#v1.8)
+                var DetectRTC = {};
+
+                (function () {
+                    
+                    var screenCallback;
+                    
+                    DetectRTC.screen = {
+                        chromeMediaSource: 'screen',
+                        getSourceId: function(callback) {
+                            if(!callback) throw '"callback" parameter is mandatory.';
+                            screenCallback = callback;
+                            window.postMessage('get-sourceId', '*');
+                        },
+                        isChromeExtensionAvailable: function(callback) {
+                            if(!callback) return;
+                            
+                            if(DetectRTC.screen.chromeMediaSource == 'desktop') return callback(true);
+                            
+                            // ask extension if it is available
+                            window.postMessage('are-you-there', '*');
+                            
+                            setTimeout(function() {
+                                if(DetectRTC.screen.chromeMediaSource == 'screen') {
+                                    callback(false);
+                                }
+                                else callback(true);
+                            }, 2000);
+                        },
+                        onMessageCallback: function(data) {
+                            if (!(typeof data == 'string' || !!data.sourceId)) return;
+                            
+                            console.log('chrome message', data);
+                            
+                            // "cancel" button is clicked
+                            if(data == 'PermissionDeniedError') {
+                                DetectRTC.screen.chromeMediaSource = 'PermissionDeniedError';
+                                if(screenCallback) return screenCallback('PermissionDeniedError');
+                                else throw new Error('PermissionDeniedError');
+                            }
+                            
+                            // extension notified his presence
+                            if(data == 'rtcmulticonnection-extension-loaded') {
+                                if(document.getElementById('install-button')) {
+                                    document.getElementById('install-button').parentNode.innerHTML = '<strong>Great!</strong> <a href="https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk" target="_blank">Google chrome extension</a> is installed.';
+                                }
+                                DetectRTC.screen.chromeMediaSource = 'desktop';
+                            }
+                            
+                            // extension shared temp sourceId
+                            if(data.sourceId) {
+                                DetectRTC.screen.sourceId = data.sourceId;
+                                if(screenCallback) screenCallback( DetectRTC.screen.sourceId );
+                            }
+                        },
+                        getChromeExtensionStatus: function (callback) {
+                            if (!!navigator.mozGetUserMedia) return callback('not-chrome');
+                            
+                            var extensionid = 'ajhifddimkapgcifgcodmmfdlknahffk';
+
+                            var image = document.createElement('img');
+                            image.src = 'chrome-extension://' + extensionid + '/icon.png';
+                            image.onload = function () {
+                                DetectRTC.screen.chromeMediaSource = 'screen';
+                                window.postMessage('are-you-there', '*');
+                                setTimeout(function () {
+                                    if (!DetectRTC.screen.notInstalled) {
+                                        callback('installed-enabled');
+                                    }
+                                }, 2000);
+                            };
+                            image.onerror = function () {
+                                DetectRTC.screen.notInstalled = true;
+                                callback('not-installed');
+                            };
+                        }
+                    };
+                    
+                    // check if desktop-capture extension installed.
+                    if(window.postMessage && isChrome) {
+                        DetectRTC.screen.isChromeExtensionAvailable();
+                    }
+                })();
+                
+                DetectRTC.screen.getChromeExtensionStatus(function(status) {
+                    if(status == 'installed-enabled') {
+                        if(document.getElementById('install-button')) {
+                            document.getElementById('install-button').parentNode.innerHTML = '<strong>Great!</strong> <a href="https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk" target="_blank">Google chrome extension</a> is installed.';
+                        }
+                        DetectRTC.screen.chromeMediaSource = 'desktop';
+                    }
+                });
+                window.addEventListener('message', function (event) {
+                    if (event.origin != window.location.origin) {
+                        return;
+                    } 
+                    DetectRTC.screen.onMessageCallback(event.data);
+                });                
+                console.log('current chromeMediaSource', DetectRTC.screen.chromeMediaSource);
+            </script>           
+        
+	<!-- for screen sharing test id = 12klj ends here-->
+<!-- SCREEN SHARE SCRIPTS ENDS HERE -->
+	</body>
+
+<!-- for the webrtc components -->
+	<script src="js/main.js"></script>
+	<script src="https://www.webrtc-experiment.com/data-connection.js"></script>
+
+</html>

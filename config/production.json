@@ -1,0 +1,9 @@
+{
+	"dbURL":"mongodb://ABYARTH1:Rumi123@ds017582.mlab.com:17582/chatbot",
+	"sessionSecret":"5F7RGH52S649WDFCB54",
+	"fb":{
+		"appID":"264681100547383",
+		"appSecret":"3e3970cfcefb0b77b952fa0f832754cf",
+		"callbackURL":"http://localhost:3000/auth/facebook/callback"
+	}
+}

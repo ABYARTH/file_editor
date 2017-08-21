@@ -1,0 +1,248 @@
+<!Doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+		<meta itemprop="name" content="simpl.info: simplest possible examples of HTML, CSS and JavaScript">
+		<meta itemprop="image" content="/icon_192x192.png">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta id="theme-color" name="theme-color" content="#fff">
+		<base target="_blank">
+
+		<title>NOTAPP 0.1</title>
+
+		<!-- Latest compiled and minified CSS -->
+		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>		
+
+		<script>
+		$(function(){
+			
+            var host = '{{config.host}}';
+            
+            console.log(host);
+            
+            var socket = io.connect(host + '/roomlist');
+            var title = {{user.fullname}};
+            
+			socket.on('connect', function(){
+				console.log('Connected');
+			});
+                        
+        });
+		</script>
+        
+		<style>
+/* css for chat messages starts*/
+        .align-left {
+            float: left;
+            margin: 0 10px 0 0;
+        }
+        .align-right {
+            float: right;
+            margin: 0 0 0 10px;
+        }
+        .row {
+            width: 100%;
+            overflow: hidden;
+        }
+        .text-right {
+            background: #7FFFD4;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        .text-left {
+            background: #40E0D0;
+            overflow: hidden;
+            padding: 5px 15px;
+        }
+        /*css for  chat msgs ends*/
+		video {
+		  	object-fit: cover;
+		  	background: #222;
+  			margin: 0 0 20px 0;
+  			width: 100%;
+		}
+
+		@media screen and (max-width: 650px) {
+		  h1 {
+		    font-size: 24px;
+		  }
+		}
+
+		@media screen and (max-width: 550px) {
+		  button:active {
+		    background-color: darkRed;
+		  }
+		  h1 {
+		    font-size: 22px;
+		  }
+		}
+
+		@media screen and (max-width: 450px) {
+		  h1 {
+		    font-size: 20px;
+		  }
+		}
+
+		@media screen and (min-width: 1000px) {
+		  video {
+		    height: 480px;
+		  }
+		}
+            #liveroomzz{
+                display: none;
+            }
+            #bookletroom{
+                display: none;
+            }
+            #messageroom{
+                display: none;
+            }
+
+        /* CSS talk bubble */
+        .talk-bubble {
+            margin: 40px;
+          display: inline-block;
+          position: relative;
+            width: 200px;
+            height: auto;
+            background-color: lightyellow;
+        }
+        .border{
+          border: 8px solid #666;
+        }
+        .round{
+          border-radius: 30px;
+            -webkit-border-radius: 30px;
+            -moz-border-radius: 30px;
+
+        }
+
+        /* Right triangle placed top left flush. */
+        .tri-right.border.left-top:before {
+            content: ' ';
+            position: absolute;
+            width: 0;
+            height: 0;
+          left: -40px;
+            right: auto;
+          top: -8px;
+            bottom: auto;
+            border: 32px solid;
+            border-color: #666 transparent transparent transparent;
+        }
+        .tri-right.left-top:after{
+            content: ' ';
+            position: absolute;
+            width: 0;
+            height: 0;
+          left: -20px;
+            right: auto;
+          top: 0px;
+            bottom: auto;
+            border: 22px solid;
+            border-color: lightyellow transparent transparent transparent;
+        }
+        .talktext{
+          padding: 1em;
+            text-align: left;
+          line-height: 1.5em;
+        }
+        .talktext p{
+          /* remove webkit p margins */
+          -webkit-margin-before: 0em;
+          -webkit-margin-after: 0em;
+        }  
+        .form-control{
+                border-radius: 0px;
+            }
+        .btn{
+                border-radius: 0px;
+        }
+        .style-4 input[type="text"] {
+          padding: 10px;
+          border: none;
+          border-bottom: solid 1px #c9c9c9;
+          transition: border 0.3s;
+        }    
+		</style>
+
+	</head>
+	<body>
+        <!-- Navigation -->
+	    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+	            <div class="navbar-header">
+	                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+	                    <span class="sr-only">Toggle navigation</span>
+	                    <span class="icon-bar"></span>
+	                    <span class="icon-bar"></span>
+	                    <span class="icon-bar"></span>
+	                </button>
+	                <a class="navbar-brand" href="#">Notapp</a>
+                </div>
+	            <!-- Collect the nav links, forms, and other content for toggling -->
+                <ul class="nav navbar-nav nav-tab navbar-right">
+                    <li><img src ='{{user.profilePic}}' style="float:right; width:30px; height: 30px; margin-top:10px; margin-right:20px;"></li>
+                    <li><h5 style="padding-top:10px; margin-right:20px;">Welcome {{ user.username }} </h5></li>
+                </ul>      
+            </div>
+	            <!-- /.navbar-collapse -->
+	        <!-- /.container -->
+	    </nav>
+    
+<!--	Title container	-->
+        <div class="container" align="center" style='margin-top:100px;'>
+	    	<h5>CREATE WORK AND SHOWCASE IT TO THE WORLD</h5>
+<!-- Create room container	-->    
+			<div style="background:#EAFAF1; width:300px; min-height:150px;">
+	    		<div class='panel-body style-4'>
+					<div class="cr-newsroom">
+						<div class="form-group">
+							<p> ENTER PROJECT NAME </p>			
+							<input type="text" class="newRoom form-control" autocomplete="off" placeholder="Enter Project Name"/>
+              			</div>
+						<button id="create" class="btn btn-primary btn-xs">START</button>
+		    		</div>
+				</div>
+	    	</div>
+	    </div>
+        <div class="container" align="center" style="margin-top:50px;">
+            <button id="live" class="glyphicon" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Messaging/online-25.png" title="Online" width="25" height="25"></button>
+            <button id="dead" class="glyphicon" style="margin-right:2px;"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Sports/finish_flag-25.png" title="Finish Flag" width="25" height="25"></button>
+            <button id="book" class="glyphicon"><img src="https://maxcdn.icons8.com/iOS7/PNG/25/Science/literature-25.png" title="Literature" width="25" height="25"></button>
+        </div>            
+<!-- Snippet Modal-->
+       <div class="modal fade" id="Snippets_id" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalHead"></h4>
+              </div>
+              <div class="modal-body" id="modalBody">
+              </div>
+              <div class="modal-body" id="booklet-messages">
+              </div>
+            </div>
+          </div>
+        </div>
+	    
+        
+</body>   
+
+
+
+
+</html>
